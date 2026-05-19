@@ -1,6 +1,8 @@
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from db import init_db, async_session
 from services.persona_service import seed_default_personas
 from routes import chat, upload
@@ -31,3 +33,8 @@ app.include_router(upload.router)
 @app.get("/api/health")
 async def health():
     return {"status": "ok"}
+
+
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.isdir(static_dir):
+    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
