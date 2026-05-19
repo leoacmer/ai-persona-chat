@@ -20,7 +20,7 @@ async def chat_completion(messages: list[dict], system_prompt: str = "") -> str:
     response = await _get_client().chat.completions.create(
         model=AI_MODEL,
         messages=full_messages,
-        temperature=0.8,
-        max_tokens=2000,
+        temperature=0.95,
+        max_tokens=500,
     )
     return response.choices[0].message.content or ""
