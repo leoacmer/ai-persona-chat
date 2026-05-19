@@ -2,13 +2,18 @@
   <div class="chat-container">
     <header class="chat-header">
       <div class="header-left">
-        <div class="avatar">🐷</div>
+        <div class="avatar">{{ personaIcon }}</div>
         <div class="header-info">
           <div class="header-name">{{ personaName }}</div>
-          <div class="header-desc">ENFP射手座 · 话痨小天才</div>
+          <div class="header-desc">{{ personaDesc }}</div>
         </div>
       </div>
-      <button @click="newChat" class="btn-new">+ 新对话</button>
+      <div class="header-right">
+        <select v-model="selectedPersona" class="persona-select">
+          <option v-for="p in personas" :key="p.id" :value="p.id">{{ p.name }}</option>
+        </select>
+        <button @click="newChat" class="btn-new">+ 新对话</button>
+      </div>
     </header>
 
     <div class="conv-list" v-if="conversations.length">
@@ -86,6 +91,15 @@ const inputRef = ref(null);
 const personaName = computed(() => {
   const p = personas.value.find(p => p.id === selectedPersona.value);
   return p ? p.name : "猪猪";
+});
+const personaDesc = computed(() => {
+  const p = personas.value.find(p => p.id === selectedPersona.value);
+  return p ? p.description : "";
+});
+const personaIcon = computed(() => {
+  const p = personas.value.find(p => p.id === selectedPersona.value);
+  if (!p) return "🐷";
+  return p.name === "晓晓" ? "🌸" : "🐷";
 });
 
 onMounted(async () => {
@@ -217,6 +231,35 @@ function scrollDown() {
   margin-top: 1px;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.persona-select {
+  padding: 6px 10px;
+  border: 1.5px solid rgba(255,255,255,0.4);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 26px;
+}
+
+.persona-select option {
+  color: #333;
+  background: #fff;
+}
+
 .btn-new {
   padding: 7px 16px;
   border: 1.5px solid rgba(255,255,255,0.4);
@@ -228,6 +271,7 @@ function scrollDown() {
   cursor: pointer;
   backdrop-filter: blur(4px);
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .btn-new:hover {
