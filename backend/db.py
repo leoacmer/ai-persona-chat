@@ -13,9 +13,22 @@ def _get_async_url(url: str) -> str:
     return url
 
 
-engine = create_async_engine(_get_async_url(DATABASE_URL), echo=False)
+_engine = None
+_async_session = None
 
-async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+def _get_engine():
+    global _engine
+    if _engine is None:
+        _engine = create_async_engine(_get_async_url(DATABASE_URL), echo=False)
+    return _engine
+
+
+def _get_sessionmaker():
+    global _async_session
+    if _async_session is None:
+        _async_session = async_sessionmaker(_get_engine(), class_=AsyncSession, expire_on_commit=False)
+    return _async_session
 
 
 class Base(DeclarativeBase):
@@ -23,10 +36,10 @@ class Base(DeclarativeBase):
 
 
 async def get_db() -> AsyncSession:
-    async with async_session() as session:
+    async with _get_sessionmaker()() as session:
         yield session
 
 
 async def init_db():
-    async with engine.begin() as conn:
+    async with _get_engine().begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
