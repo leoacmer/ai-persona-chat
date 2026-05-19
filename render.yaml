@@ -10,6 +10,6 @@ services:
       - key: AI_API_BASE
         sync: false
       - key: AI_MODEL
-        value: deepseek-chat
+        value: deepseek-v4-pro
       - key: UVICORN_LOOP
         value: asyncio
