@@ -51,6 +51,7 @@
     <div class="input-area">
       <div class="input-wrapper">
         <input
+          ref="inputRef"
           v-model="input"
           @keyup.enter="send"
           placeholder="说点什么..."
@@ -80,6 +81,7 @@ const messages = ref([]);
 const input = ref("");
 const loading = ref(false);
 const msgBox = ref(null);
+const inputRef = ref(null);
 
 const personaName = computed(() => {
   const p = personas.value.find(p => p.id === selectedPersona.value);
@@ -143,6 +145,7 @@ async function send() {
   } finally {
     loading.value = false;
     scrollDown();
+    nextTick(() => inputRef.value?.focus());
   }
 }
 
