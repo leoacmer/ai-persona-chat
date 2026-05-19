@@ -1,4 +1,5 @@
 import datetime
+import re
 import traceback
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -8,6 +9,14 @@ from services.persona_service import get_persona, list_personas
 from services.memory_service import build_context, extract_and_save_memory
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
+
+
+def strip_actions(text: str) -> str:
+    """去掉括号动作描写：（xxx）和 (xxx)，以及 *xxx*"""
+    text = re.sub(r"[（(][^）)]*[）)]", "", text)
+    text = re.sub(r"\*[^*]+\*", "", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
 
 
 class ChatRequest(BaseModel):
@@ -54,6 +63,7 @@ async def chat(req: ChatRequest):
 
         context = await build_context(req.conversation_id)
         reply = await chat_completion(context, persona.system_prompt)
+        reply = strip_actions(reply)
 
         _messages.append(Message(
             id=_next(),
