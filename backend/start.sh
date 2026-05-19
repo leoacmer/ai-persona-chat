@@ -5,51 +5,56 @@ cd "$(dirname "$0")"
 echo "=== 1. Python ==="
 python --version
 
-echo "=== 2. Basic imports ==="
-python -c "
-import sys; print('sys OK', flush=True)
-import fastapi; print('fastapi OK', flush=True)
-import sqlalchemy; print('sqlalchemy OK', flush=True)
-import openai; print('openai OK', flush=True)
-import uvicorn; print('uvicorn OK', flush=True)
-import aiosqlite; print('aiosqlite OK', flush=True)
-import asyncpg; print('asyncpg OK', flush=True)
-"
-
-echo "=== 3. Config ==="
+echo "=== 2. Config ==="
 python -c "
 import config
-print('DATABASE_URL:', config.DATABASE_URL[:30], flush=True)
+print('DATABASE_URL:', config.DATABASE_URL, flush=True)
 print('AI_BASE:', config.AI_API_BASE, flush=True)
 print('AI_MODEL:', config.AI_MODEL, flush=True)
 "
 
-echo "=== 4. DB engine ==="
-python -c "
+echo "=== 3. Import test ==="
+python -c "from app import app; print('Import OK', flush=True)"
+
+echo "=== 4. Wait for DB ready ==="
+for i in 1 2 3 4 5 6; do
+  echo "Attempt $i/6 ..."
+  python -c "
 from db import _get_engine, Base
-engine = _get_engine()
-print('Engine OK', flush=True)
-"
+import asyncio, sqlalchemy
+from sqlalchemy import text
 
-echo "=== 5. Models ==="
+async def test():
+    engine = _get_engine()
+    async with engine.connect() as conn:
+        await conn.execute(text('SELECT 1'))
+    print('DB connection OK', flush=True)
+asyncio.run(test())
+" && break
+  echo "Retrying in 5s..."
+  sleep 5
+done
+
+echo "=== 5. Init DB ==="
 python -c "
-from models import Persona, Conversation, Message, Memory
-print('Models OK', flush=True)
+from db import init_db
+import asyncio
+asyncio.run(init_db())
+print('Init OK', flush=True)
 "
 
-echo "=== 6. Services ==="
+echo "=== 6. Seed personas ==="
 python -c "
-from services.ai_service import chat_completion
-print('ai_service OK', flush=True)
-from services.persona_service import get_persona
-print('persona_service OK', flush=True)
+from db import _get_sessionmaker
+from services.persona_service import seed_default_personas
+import asyncio
+
+async def seed():
+    async with _get_sessionmaker()() as db:
+        await seed_default_personas(db)
+    print('Seed OK', flush=True)
+asyncio.run(seed())
 "
 
-echo "=== 7. App ==="
-python -c "
-from app import app
-print('App OK', flush=True)
-"
-
-echo "=== 8. Starting ==="
+echo "=== 7. Starting uvicorn ==="
 exec python -m uvicorn app:app --host 0.0.0.0 --port $PORT
