@@ -7,9 +7,9 @@ def _get_async_url(url: str) -> str:
     if url.startswith("sqlite"):
         return url.replace("sqlite:///", "sqlite+aiosqlite:///")
     if url.startswith("postgresql://"):
-        return url.replace("postgresql://", "postgresql+asyncpg://")
+        return url.replace("postgresql://", "postgresql+psycopg2://")
     if url.startswith("postgres://"):
-        return url.replace("postgres://", "postgresql+asyncpg://")
+        return url.replace("postgres://", "postgresql+psycopg2://")
     return url
 
 

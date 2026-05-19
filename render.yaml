@@ -14,7 +14,9 @@ services:
       - key: AI_API_BASE
         sync: false
       - key: AI_MODEL
-        value: gpt-4o
+        value: deepseek-chat
+      - key: UVICORN_LOOP
+        value: asyncio
 
 databases:
   - name: persona-chat-db
