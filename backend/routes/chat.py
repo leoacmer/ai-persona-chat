@@ -28,33 +28,41 @@ async def get_personas(db: AsyncSession = Depends(get_db)):
     return [{"id": p.id, "name": p.name, "description": p.description} for p in personas]
 
 
+import traceback
+
 @router.post("", response_model=ChatResponse)
 async def chat(req: ChatRequest, db: AsyncSession = Depends(get_db)):
-    persona = await get_persona(db, req.persona_id)
-    if persona is None:
-        raise HTTPException(status_code=404, detail="Persona not found")
+    try:
+        persona = await get_persona(db, req.persona_id)
+        if persona is None:
+            raise HTTPException(status_code=404, detail="Persona not found")
 
-    if req.conversation_id is None:
-        conv = Conversation(persona_id=req.persona_id, title=req.message[:30])
-        db.add(conv)
+        if req.conversation_id is None:
+            conv = Conversation(persona_id=req.persona_id, title=req.message[:30])
+            db.add(conv)
+            await db.commit()
+            await db.refresh(conv)
+            req.conversation_id = conv.id
+
+        user_msg = Message(conversation_id=req.conversation_id, role="user", content=req.message)
+        db.add(user_msg)
         await db.commit()
-        await db.refresh(conv)
-        req.conversation_id = conv.id
 
-    user_msg = Message(conversation_id=req.conversation_id, role="user", content=req.message)
-    db.add(user_msg)
-    await db.commit()
+        context = await build_context(db, req.conversation_id)
+        reply = await chat_completion(context, persona.system_prompt)
 
-    context = await build_context(db, req.conversation_id)
-    reply = await chat_completion(context, persona.system_prompt)
+        ai_msg = Message(conversation_id=req.conversation_id, role="assistant", content=reply)
+        db.add(ai_msg)
+        await db.commit()
 
-    ai_msg = Message(conversation_id=req.conversation_id, role="assistant", content=reply)
-    db.add(ai_msg)
-    await db.commit()
+        await extract_and_save_memory(db, req.conversation_id, req.message, reply)
 
-    await extract_and_save_memory(db, req.conversation_id, req.message, reply)
-
-    return ChatResponse(conversation_id=req.conversation_id, reply=reply)
+        return ChatResponse(conversation_id=req.conversation_id, reply=reply)
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/conversations")

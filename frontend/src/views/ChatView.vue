@@ -95,7 +95,7 @@ async function send() {
   scrollDown();
 
   try {
-    const res = await http.post("", {
+    const res = await http.post("/chat", {
       persona_id: pid,
       conversation_id: conversationId.value,
       message: msg,
