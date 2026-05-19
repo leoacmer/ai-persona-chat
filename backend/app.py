@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from db import init_db, async_session
+from db import init_db, _get_sessionmaker
 from services.persona_service import seed_default_personas
 from routes import chat, upload
 
@@ -11,7 +11,7 @@ from routes import chat, upload
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    async with async_session() as db:
+    async with _get_sessionmaker()() as db:
         await seed_default_personas(db)
     yield
 
