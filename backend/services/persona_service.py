@@ -1,24 +1,15 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from models import Persona
+from db import _personas, _next, Persona
 
 
-async def get_persona(db: AsyncSession, persona_id: int) -> Persona | None:
-    result = await db.execute(select(Persona).where(Persona.id == persona_id))
-    return result.scalar_one_or_none()
+async def get_persona(persona_id: int) -> Persona | None:
+    for p in _personas:
+        if p.id == persona_id:
+            return p
+    return None
 
 
-async def list_personas(db: AsyncSession) -> list[Persona]:
-    result = await db.execute(select(Persona))
-    return list(result.scalars().all())
-
-
-async def create_persona(db: AsyncSession, name: str, description: str, system_prompt: str) -> Persona:
-    persona = Persona(name=name, description=description, system_prompt=system_prompt)
-    db.add(persona)
-    await db.commit()
-    await db.refresh(persona)
-    return persona
+async def list_personas() -> list[Persona]:
+    return list(_personas)
 
 
 DEFAULT_PERSONAS = [
@@ -40,9 +31,14 @@ DEFAULT_PERSONAS = [
 ]
 
 
-async def seed_default_personas(db: AsyncSession):
+async def seed_default_personas():
+    import datetime
     for p in DEFAULT_PERSONAS:
-        existing = await db.execute(select(Persona).where(Persona.name == p["name"]))
-        if existing.scalar_one_or_none() is None:
-            db.add(Persona(**p))
-    await db.commit()
+        if not any(existing.name == p["name"] for existing in _personas):
+            _personas.append(Persona(
+                id=_next(),
+                name=p["name"],
+                description=p["description"],
+                system_prompt=p["system_prompt"],
+                created_at=datetime.datetime.utcnow().isoformat(),
+            ))

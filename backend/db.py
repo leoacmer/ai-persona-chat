@@ -1,45 +1,57 @@
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase
-from config import DATABASE_URL
+import datetime
+from dataclasses import dataclass, field
+
+# In-memory stores — survives until restart
+_personas: list["Persona"] = []
+_conversations: list["Conversation"] = []
+_messages: list["Message"] = []
+_memories: list["Memory"] = []
+_next_id = 1
 
 
-def _get_async_url(url: str) -> str:
-    if url.startswith("sqlite"):
-        return url.replace("sqlite:///", "sqlite+aiosqlite:///")
-    if url.startswith("postgresql://"):
-        return url.replace("postgresql://", "postgresql+psycopg_async://")
-    if url.startswith("postgres://"):
-        return url.replace("postgres://", "postgresql+psycopg_async://")
-    return url
+def _next() -> int:
+    global _next_id
+    n = _next_id
+    _next_id += 1
+    return n
 
 
-_engine = None
-_async_session = None
+@dataclass
+class Persona:
+    id: int
+    name: str
+    description: str
+    system_prompt: str
+    created_at: str = ""
 
 
-def _get_engine():
-    global _engine
-    if _engine is None:
-        _engine = create_async_engine(_get_async_url(DATABASE_URL), echo=False)
-    return _engine
+@dataclass
+class Conversation:
+    id: int
+    persona_id: int
+    title: str = "新对话"
+    created_at: str = ""
 
 
-def _get_sessionmaker():
-    global _async_session
-    if _async_session is None:
-        _async_session = async_sessionmaker(_get_engine(), class_=AsyncSession, expire_on_commit=False)
-    return _async_session
+@dataclass
+class Message:
+    id: int
+    conversation_id: int
+    role: str
+    content: str
+    embedding: str | None = None
+    created_at: str = ""
 
 
-class Base(DeclarativeBase):
-    pass
-
-
-async def get_db() -> AsyncSession:
-    async with _get_sessionmaker()() as session:
-        yield session
+@dataclass
+class Memory:
+    id: int
+    conversation_id: int
+    key: str
+    value: str
+    importance: float = 0.5
+    created_at: str = ""
 
 
 async def init_db():
-    async with _get_engine().begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    pass
