@@ -19,6 +19,28 @@ def strip_actions(text: str) -> str:
     return text
 
 
+EMOJI_MAP = {
+    "[太阳]": "☀️", "[心]": "❤️", "[冲鸭]": "💪",
+    "[敲头]": "😤", "[大哭]": "😭", "[转圈圈]": "💫",
+    "[坏笑]": "😏", "[亲亲]": "😘", "[可怜]": "🥺",
+    "[星星眼]": "🤩", "[害羞]": "😳", "[委屈]": "😣",
+    "[傲娇]": "😤", "[生气]": "😡", "[开心]": "😄",
+    "[难过]": "😢", "[惊讶]": "😲", "[白眼]": "🙄",
+    "[偷笑]": "🤭", "[石化]": "😰", "[叹气]": "😮‍💨",
+    "[思考]": "🤔", "[赞]": "👍", "[比心]": "🫰",
+    "[鼓掌]": "👏", "[玫瑰]": "🌹", "[抱抱]": "🫂",
+    "[干杯]": "🥂", "[礼物]": "🎁", "[红包]": "🧧",
+    "[烟花]": "🎆", "[月亮]": "🌙", "[星星]": "⭐",
+    "[火]": "🔥", "[彩虹]": "🌈", "[蛋糕]": "🎂",
+}
+
+
+def render_emoji(text: str) -> str:
+    for tag, emoji in EMOJI_MAP.items():
+        text = text.replace(tag, emoji)
+    return text
+
+
 class ChatRequest(BaseModel):
     conversation_id: int | None = None
     persona_id: int
@@ -64,6 +86,7 @@ async def chat(req: ChatRequest):
         context = await build_context(req.conversation_id)
         reply = await chat_completion(context, persona.system_prompt)
         reply = strip_actions(reply)
+        reply = render_emoji(reply)
 
         _messages.append(Message(
             id=_next(),
